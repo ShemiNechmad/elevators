@@ -8,6 +8,7 @@ export function useElevatorEngine() {
     const elevatorsRef = useRef(elevators);
     const floorsRef = useRef(floors);
     const timersRef = useRef<Record<number, number[]>>({});
+    const intervalRef = useRef<number | null>(null);
     elevatorsRef.current = elevators;
     floorsRef.current = floors;
 
@@ -15,7 +16,7 @@ export function useElevatorEngine() {
         let F = [...floorsRef.current];
         let E = [...elevatorsRef.current];
         F = changeFloorStatus(F, floorIndex, 'Waiting');
-        let { elevatorIndex, estimated } = chooseClosestElevator(F, E, floorIndex);
+        const { elevatorIndex, estimated } = chooseClosestElevator(F, E, floorIndex);
         F = changeFloorEstimated(F, floorIndex, estimated);
         E = changeElevatorTargets(E, elevatorIndex, floorIndex);
         setElevators(E);
@@ -137,10 +138,37 @@ export function useElevatorEngine() {
     }, [setElevators, setFloors]);
 
     useEffect(() => {
+        const decrementEstimates = () => {
+            const currentFloors = floorsRef.current;
+            const newFloors = currentFloors.map(floor => {
+                if (floor.estimated > 0) {
+                    return {
+                        ...floor,
+                        estimated: floor.estimated - 1
+                    };
+                }
+                return floor;
+            });
+            setFloors(newFloors);
+            floorsRef.current = newFloors;
+        };
+        intervalRef.current = window.setInterval(decrementEstimates, 1000);
+        return () => {
+            if (intervalRef.current !== null) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+        };
+    }, [setFloors]);
+
+    useEffect(() => {
         return () => {
             Object.values(timersRef.current).flat().forEach(timerId => {
                 clearTimeout(timerId);
             });
+            if (intervalRef.current !== null) {
+                clearInterval(intervalRef.current);
+            }
         };
     }, []);
 
