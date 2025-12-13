@@ -91,6 +91,8 @@ export function useElevatorEngine() {
             setElevators(arrivedElevators);
             elevatorsRef.current = arrivedElevators;
 
+            playAudioNotification();
+
             const timerId2 = window.setTimeout(() => {
                 const finalElevators = elevatorsRef.current;
                 const finalFloors = floorsRef.current;
@@ -136,6 +138,12 @@ export function useElevatorEngine() {
         timersRef.current[elevatorIndex] = [...(timersRef.current[elevatorIndex] || []), timerId1];
 
     }, [setElevators, setFloors]);
+
+    function playAudioNotification() {
+        const audio = new Audio('/audio/door-opens.mp3');
+        audio.currentTime = 0;
+        audio.play();
+    }
 
     useEffect(() => {
         const decrementEstimates = () => {
