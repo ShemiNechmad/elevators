@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { useMain } from "@/app/context/MainContext";
 import { chooseClosestElevator } from "./utils";
 import { elevatorReducer, floorReducer } from "./elevatorReducer";
@@ -7,6 +7,7 @@ export function useElevatorEngine() {
     const { elevators, setElevators, floors, setFloors } = useMain();
     const elevatorsRef = useRef(elevators);
     const floorsRef = useRef(floors);
+    const timersRef = useRef<Record<number, number[]>>({});
     elevatorsRef.current = elevators;
     floorsRef.current = floors;
 
@@ -69,7 +70,7 @@ export function useElevatorEngine() {
         setElevators(movingElevators);
         elevatorsRef.current = movingElevators;
 
-        setTimeout(() => {
+        const timerId1 = window.setTimeout(() => {
             const freshElevators = elevatorsRef.current;
             const freshFloors = floorsRef.current;
 
@@ -89,7 +90,7 @@ export function useElevatorEngine() {
             setElevators(arrivedElevators);
             elevatorsRef.current = arrivedElevators;
 
-            setTimeout(() => {
+            const timerId2 = window.setTimeout(() => {
                 const finalElevators = elevatorsRef.current;
                 const finalFloors = floorsRef.current;
 
@@ -121,10 +122,27 @@ export function useElevatorEngine() {
                 setFloors(resetFloors);
                 floorsRef.current = resetFloors;
 
+                timersRef.current[elevatorIndex] = (timersRef.current[elevatorIndex] || [])
+                    .filter(id => id !== timerId1 && id !== timerId2);
+
                 processNextFloor(elevatorIndex);
             }, 2000);
+
+            timersRef.current[elevatorIndex] = [...(timersRef.current[elevatorIndex] || []), timerId2];
+
         }, estimatedTime * 1000);
+
+        timersRef.current[elevatorIndex] = [...(timersRef.current[elevatorIndex] || []), timerId1];
+
     }, [setElevators, setFloors]);
+
+    useEffect(() => {
+        return () => {
+            Object.values(timersRef.current).flat().forEach(timerId => {
+                clearTimeout(timerId);
+            });
+        };
+    }, []);
 
     return { callElevator };
 }
