@@ -19,10 +19,8 @@ export function useElevatorEngine() {
         const { elevatorIndex, estimated } = chooseClosestElevator(F, E, floorIndex);
         F = changeFloorEstimated(F, floorIndex, estimated);
         E = changeElevatorTargets(E, elevatorIndex, floorIndex);
-        setElevators(E);
-        elevatorsRef.current = E;
-        setFloors(F);
-        floorsRef.current = F;
+        updateElevators(E);
+        updateFloors(F);
         const elevator = E[elevatorIndex];
         if (!elevator.isMoving) {
             processNextFloor(elevatorIndex);
@@ -68,8 +66,7 @@ export function useElevatorEngine() {
             elevatorIndex,
             bottom: floorIndex * 70,
         });
-        setElevators(movingElevators);
-        elevatorsRef.current = movingElevators;
+        updateElevators(movingElevators);
 
         const timerId1 = window.setTimeout(() => {
             const freshElevators = elevatorsRef.current;
@@ -80,16 +77,14 @@ export function useElevatorEngine() {
                 floorIndex,
                 status: 'Arrived',
             });
-            setFloors(arrivedFloors);
-            floorsRef.current = arrivedFloors;
+            updateFloors(arrivedFloors);
 
             let arrivedElevators = elevatorReducer(freshElevators, {
                 type: 'SET_ELEVATOR_CURRENT_FLOOR',
                 elevatorIndex,
                 currentFloor: floorIndex,
             });
-            setElevators(arrivedElevators);
-            elevatorsRef.current = arrivedElevators;
+            updateElevators(arrivedElevators);
 
             playAudioNotification();
 
@@ -120,10 +115,8 @@ export function useElevatorEngine() {
                     isMoving: false,
                 });
 
-                setElevators(resetElevators);
-                elevatorsRef.current = resetElevators;
-                setFloors(resetFloors);
-                floorsRef.current = resetFloors;
+                updateElevators(resetElevators);
+                updateFloors(resetFloors);
 
                 timersRef.current[elevatorIndex] = (timersRef.current[elevatorIndex] || [])
                     .filter(id => id !== timerId1 && id !== timerId2);
@@ -168,6 +161,16 @@ export function useElevatorEngine() {
             }
         };
     }, [setFloors]);
+
+    function updateElevators(elevators: IElevator[]) {
+        setElevators(elevators);
+        elevatorsRef.current = elevators;
+    }
+
+    function updateFloors(floors: IFloor[]) {
+        setFloors(floors);
+        floorsRef.current = floors;
+    }
 
     useEffect(() => {
         return () => {
